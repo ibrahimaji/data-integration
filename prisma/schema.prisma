@@ -1,0 +1,91 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+generator zod {
+  provider              = "zod-prisma"
+  output                = "./zod" 
+  relationModel         = true 
+  modelCase             = "camelCase" 
+  modelSuffix           = "Schema" 
+  useDecimalJs          = true 
+  prismaJsonNullability = true 
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+
+model User {
+  id           String    @id @unique
+
+  username String
+  name     String?
+  email    String?
+
+
+  auth_session Session[]
+  key          Key[]
+}
+
+model Session {
+  id             String @id @unique
+  user_id        String
+  active_expires BigInt
+  idle_expires   BigInt
+  user           User   @relation(references: [id], fields: [user_id], onDelete: Cascade)
+
+  @@index([user_id])
+}
+
+model Key {
+  id              String  @id @unique
+  hashed_password String?
+  user_id         String
+  user            User    @relation(references: [id], fields: [user_id], onDelete: Cascade)
+
+  @@index([user_id])
+}
+
+// Tahun Anggaran
+model TahunAnggaran {
+  id                Int                 @id @default(autoincrement())
+  tahun             Int
+  programs          Program[]
+}
+
+// Program
+model Program {
+  id                Int                 @id @default(autoincrement())
+  name              String
+  tahunAnggaran     TahunAnggaran       @relation(fields: [tahunAnggaranId], references: [id])
+  tahunAnggaranId   Int
+  kegiatans         Kegiatan[]
+}
+
+// Kegiatan
+model Kegiatan {
+  id                Int                 @id @default(autoincrement())
+  name              String
+  program           Program             @relation(fields: [programId], references: [id])
+  programId         Int
+  subKegiatans      SubKegiatan[]
+}
+
+// Sub Kegiatan
+model SubKegiatan {
+  id                Int                 @id @default(autoincrement())
+  name              String
+  kegiatan          Kegiatan            @relation(fields: [kegiatanId], references: [id])
+  kegiatanId        Int
+  targetKinerja     Float               // assuming it's a decimal value
+  anggaran          Int                 // using Int for whole numbers (Rupiah)
+  realisasiAnggaran Int                 // using Int for whole numbers (Rupiah)
+  realisasiKinerja  Float               // assuming it's a decimal value
+  satuan            String              // Unit type such as percent, buah, orang, etc.
+}
